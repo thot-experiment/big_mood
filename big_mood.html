@@ -65,12 +65,11 @@
       <div id="sidebar">
         <div id="sidebar-content">
           <h1 style="margin-top:-16px;"><pre>ｂｉｇ   ｍｏｏｄ</pre></h1>
-            <p>Welcome to thot_experiment's mood board thingy, drag images anywhere to place them</p>
+            <p>Welcome to thot_experiment's mood board thingy, drag or paste images anywhere to place them</p>
             <h4>keybinds</h4>
             <ul>
               <li><strong>G + Drag</strong>: Hold G to grab and move an image.</li>
               <li><strong>G + Scroll / S + Drag</strong>: Scale image.</li>
-              ar
               <li><strong>X</strong>: Delete hovered image.</li>
               <li><strong>Click & Drag</strong>: Drag the board to navigate.</li>
               <li><strong>Scroll Wheel</strong>: Zoom in and out.</li>
@@ -148,7 +147,7 @@
             let {name} = file
             const src = await toBase64(file)
             const {x,y} = clientToBoardCoords(e.clientX,e.clientY,boardScale)
-            if (savedImages[name]) name = 'x'+name
+            while (savedImages[name]) name = 'x'+name
             const mood_image = {name, src, x, y}
             const img = addImage(mood_image)
             savedImages[name] = img.metadata
@@ -172,7 +171,7 @@
             let {name} = file
             const src = await toBase64(file)
             const {x, y} = clientToBoardCoords(last_mpos.x, last_mpos.y, boardScale)
-            if (savedImages[name]) name = 'x'+name
+            while (savedImages[name]) name = 'x'+name
             const mood_image = {name, src, x, y}
             const img = addImage(mood_image)
             savedImages[name] = img.metadata
