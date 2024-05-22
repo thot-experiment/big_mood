@@ -47,37 +47,55 @@ window.addEventListener('beforeunload', e => {
   e.preventDefault()
 })
 
+
 window.savedImages = {} 
 document.addEventListener('dragover', e => e.preventDefault())
 document.addEventListener('drop', async e => {
   e.preventDefault()
-  const file = e.dataTransfer.files[0]
-  if (file?.type.startsWith('image/')) {
-    let {name} = file
-    const src = await toBase64(file)
+  //TODO see if this can be rewritten to only use .items api
+  if (e.dataTransfer && e.dataTransfer.items && !(e.dataTransfer.files.length)) {
+    //Firefox only, chrome also returns an imagefile when dragging an image from
+    //a webpage
+    const url = e.dataTransfer.getData('text/plain')
+
+    let src = url 
+
+    let name = Math.random().toString(16).padEnd(10,'0').slice(2,10)
     const {x,y} = clientToBoardCoords(e.clientX,e.clientY,boardScale)
     while (savedImages[name]) name = 'x'+name
     const mood_image = {name, src, x, y}
-    const img = addImage(mood_image)
-    savedImages[name] = img.metadata
-  } else if (file.type === 'application/json') {
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const obj = JSON.parse(event.target.result)
-      import_json(obj)
+    let file_num = 0
+    for (const file of files) {
+      if (file?.type.startsWith('image/')) {
+        let {name} = file
+        const src = await toBase64(file)
+        const {x,y} = clientToBoardCoords(e.clientX,e.clientY,boardScale)
+        while (savedImages[name]) name = 'x'+name
+        const mood_image = {name, src, x:x+file_num*50, y:y+file_num*50}
+        const img = addImage(mood_image)
+        savedImages[name] = img.metadata
+      } else if (file.type === 'application/json') {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          const obj = JSON.parse(event.target.result)
+          import_json(obj)
+        }
+        reader.readAsText(file)
+      } else if (file.type === 'text/html') {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          const result = event.target.result
+          const dom = new DOMParser().parseFromString(result, 'text/html')
+          const obj = JSON.parse(dom.querySelector('#saved-image-div').innerText.slice(21,-24))
+          import_json(obj)
+
+        }
+        reader.readAsText(file)
+      } else {
+        console.log('unsupported filetype')
+      }
+      file_num++
     }
-    reader.readAsText(file)
-  } else if (file.type === 'text/html') {
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const result = event.target.result
-      const dom = new DOMParser().parseFromString(result, 'text/html')
-      console.log(dom)
-      const obj = JSON.parse(dom.querySelector('#saved-image-div').innerText.slice(21,-24))
-      import_json(obj)
-      
-    }
-    reader.readAsText(file)
   }
 })
 
@@ -96,6 +114,14 @@ document.addEventListener('paste', async e => {
 })
 
 let startBoardCoords;
+
+document.addEventListener('keyup', e => {
+  //grabbed.classList.remove('grabbing')
+  oscale = false
+  startBoardCoords = undefined
+  grabbed = null
+  scaling = null
+})
 
 document.addEventListener('keydown', e => {
   if (e.ctrlKey && e.key === 's') {
@@ -159,13 +185,6 @@ document.addEventListener('mousemove', e => {
   }
 })
 
-document.addEventListener('keyup', e => {
-  //grabbed.classList.remove('grabbing')
-  oscale = false
-  startBoardCoords = undefined
-  grabbed = null
-  scaling = null
-})
 
 // Load previously saved images
 window.loadImages = images => Object.values(images).forEach(addImage)
