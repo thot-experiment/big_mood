@@ -4,7 +4,7 @@ const dir = await fs.readdir('.')
 const js_filenames = dir.filter(f => f.slice(-3) === 'mjs' && f !== 'build.mjs')
 
 const js_files = await Promise.all(js_filenames.map(
-  fd => fs.readFile(fd).then(b => b.toString())
+  fd => fs.readFile(fd).then(b => b.toString().replace(/\r\n/g,'\n'))
 ))
 const concat_js = js_files.join('\n')
 
@@ -19,6 +19,6 @@ const built_file = html
 //convert to buffer to avoid line ending change on windows
 const buffer = Buffer.from(built_file)
 
-await fs.writeFile('big_mood.html',buffer, 'binary')
+await fs.writeFile('index.html',buffer, 'binary')
 
-console.log('built big_mood.html')
+console.log('built index.html')
