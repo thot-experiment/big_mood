@@ -34,7 +34,16 @@ const import_json = obj => {
   }
 }
 
-window.expt = () => {
+window.expt = async (quality,type) => {
+  for (const [name, metadata] of Object.entries(savedImages)) {
+    if (metadata.src.slice(0,4) !== 'data') {
+      const blob = await fetch(metadata.src).then(a => a.blob()).catch(_=>undefined)
+      if (blob) metadata.src = await toBase64(blob)
+    }
+    if (metadata.src.slice(0,4) === 'data' && quality) {
+      metadata.src = await convert_image(metadata.src, type, quality)
+    }
+  }
   const blob = new Blob([JSON.stringify(savedImages)], { type: 'application/json' })
   const a = document.createElement('a')
   let title = document.querySelector('#board-title').innerText.replace(/ +/g,'_').replace(/\W/gm,'')
@@ -51,6 +60,28 @@ window.addEventListener('beforeunload', e => {
 })
 
 
+const convert_image = (b64img, type='image/webp', quality= 0.9) => new Promise(res => {
+  const img = new Image()
+  img.src = b64img
+
+  img.onload = function() {
+    const canvas = document.createElement('canvas')
+    canvas.width = img.width
+    canvas.height = img.height
+
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0)
+
+    const dataURL = canvas.toDataURL(type, quality)
+    res(dataURL)
+  }
+
+  img.onerror = function() {
+    console.error('Failed to load the base64 image.')
+  }
+})
+
+
 window.savedImages = {} 
 document.addEventListener('dragover', e => e.preventDefault())
 document.addEventListener('drop', async e => {
@@ -61,7 +92,11 @@ document.addEventListener('drop', async e => {
     //a webpage
     const url = e.dataTransfer.getData('text/plain')
 
+    //TODO should alert in UI when something is linked
     let src = url 
+
+    const blob = await fetch(url).then(a => a.blob()).catch(_=>undefined)
+    if (blob) src = await toBase64(blob)
 
     let name = Math.random().toString(16).padEnd(10,'0').slice(2,10)
     const {x,y} = clientToBoardCoords(e.clientX,e.clientY,boardScale)
@@ -75,8 +110,11 @@ document.addEventListener('drop', async e => {
     let file_num = 0
     for (const file of files) {
       if (file?.type.startsWith('image/')) {
+        let src = await toBase64(file)
+        if (file?.type.startsWith('image/bmp')) {
+          src = await convert_image(src)
+        }
         let {name} = file
-        const src = await toBase64(file)
         const {x,y} = clientToBoardCoords(e.clientX,e.clientY,boardScale)
         while (savedImages[name]) name = 'x'+name
         const mood_image = {name, src, x:x+file_num*50, y:y+file_num*50}
