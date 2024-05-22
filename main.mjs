@@ -27,8 +27,10 @@ const clientToBoardCoords = (clientX, clientY, boardScale) => {
 
 const import_json = obj => {
   for (const [name, metadata] of Object.entries(obj)) {
-    addImage({ name, ...metadata })
-    savedImages[name] = metadata
+    if (!(savedImages[name])) {
+      addImage({ name, ...metadata })
+      savedImages[name] = metadata
+    }
   }
 }
 
@@ -179,6 +181,9 @@ saveBtn.addEventListener('click', () => {
   document.getElementById('board').innerHTML = ''
   const saved_div = document.getElementById('saved-image-div')
   if (saved_div) saved_div.innerHTML = ''
+  //delete saved images div if exists (we're doing qsa for backwards compat) 
+  document.querySelectorAll('#saved-images-div')?.forEach(div => remove())
+
   const savedHtml = document.documentElement.outerHTML
   const saveScript = `<script id="saved-image-div">window.savedImages = ${JSON.stringify(savedImages)};loadImages(savedImages)<${"\/"}script>`
   const blob = new Blob([savedHtml.replace(`<${"\/"}body>`, `${saveScript}<${"\/"}body>`)], {type: 'text/html'})
