@@ -65,7 +65,7 @@
     <div id="sidebar-container">
       <div id="sidebar">
         <div id="sidebar-content">
-          <h1 style="margin-top:-16px;"><pre>ｂｉｇ   ｍｏｏｄ</pre></h1>
+          <h1 style="margin-top:-16px;"><pre id="board-title" contenteditable="true">ｂｉｇ   ｍｏｏｄ</pre></h1>
             <p>Welcome to thot_experiment's mood board thingy, drag or paste images anywhere to place them</p>
             <h4>keybinds</h4>
             <ul>
@@ -139,11 +139,14 @@ const import_json = obj => {
 window.expt = () => {
   const blob = new Blob([JSON.stringify(savedImages)], { type: 'application/json' })
   const a = document.createElement('a')
+  let title = document.querySelector('#board-title').innerText.replace(/ +/g,'_').replace(/\W/gm,'')
+  if (!(title.replace(/_/g,'').trim())) title = 'big_mood'
   a.href = URL.createObjectURL(blob)
-  a.download = 'mood_board.json'
+  a.download = `${title}_${dateToFilename(new Date())}.json`
   a.click()
   URL.revokeObjectURL(a.href)
 }
+
 
 window.addEventListener('beforeunload', e => {
   e.preventDefault()
@@ -161,11 +164,6 @@ document.addEventListener('drop', async e => {
     const url = e.dataTransfer.getData('text/plain')
 
     let src = url 
-    if (!(e.shiftKey)) {
-      const response = await fetch(url)
-      const blob = await response.blob()
-      src = await toBase64(blob)
-    }
 
     let name = Math.random().toString(16).padEnd(10,'0').slice(2,10)
     const {x,y} = clientToBoardCoords(e.clientX,e.clientY,boardScale)
@@ -198,15 +196,13 @@ document.addEventListener('drop', async e => {
         reader.onload = (event) => {
           const result = event.target.result
           const dom = new DOMParser().parseFromString(result, 'text/html')
-          console.log(dom)
           const obj = JSON.parse(dom.querySelector('#saved-image-div').innerText.slice(21,-24))
           import_json(obj)
 
         }
         reader.readAsText(file)
       } else {
-        console.log
-
+        console.log('unsupported filetype')
       }
       file_num++
     }
@@ -322,12 +318,15 @@ saveBtn.addEventListener('click', () => {
   const blob = new Blob([savedHtml.replace(`<${"\/"}body>`, `${saveScript}<${"\/"}body>`)], {type: 'text/html'})
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
+  let title = document.querySelector('#board-title').innerText.replace(/ +/g,'_').replace(/\W/gm,'')
+  if (!(title.replace(/_/g,'').trim())) title = 'big_mood'
   a.href = url
-  a.download = `big_mood_${dateToFilename(new Date())}.html`
+  a.download = `${title}_${dateToFilename(new Date())}.html`
   a.click()
   URL.revokeObjectURL(url)
   loadImages(savedImages)
 })
+
 // Utility functions
 const toBase64 = file => new Promise((resolve, reject) => {
   const reader = new FileReader()

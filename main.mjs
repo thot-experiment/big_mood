@@ -37,11 +37,14 @@ const import_json = obj => {
 window.expt = () => {
   const blob = new Blob([JSON.stringify(savedImages)], { type: 'application/json' })
   const a = document.createElement('a')
+  let title = document.querySelector('#board-title').innerText.replace(/ +/g,'_').replace(/\W/gm,'')
+  if (!(title.replace(/_/g,'').trim())) title = 'big_mood'
   a.href = URL.createObjectURL(blob)
-  a.download = 'mood_board.json'
+  a.download = `${title}_${dateToFilename(new Date())}.json`
   a.click()
   URL.revokeObjectURL(a.href)
 }
+
 
 window.addEventListener('beforeunload', e => {
   e.preventDefault()
@@ -64,6 +67,11 @@ document.addEventListener('drop', async e => {
     const {x,y} = clientToBoardCoords(e.clientX,e.clientY,boardScale)
     while (savedImages[name]) name = 'x'+name
     const mood_image = {name, src, x, y}
+    const img = addImage(mood_image)
+    savedImages[name] = img.metadata
+
+  } else if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+    const files = [...e.dataTransfer.files]
     let file_num = 0
     for (const file of files) {
       if (file?.type.startsWith('image/')) {
@@ -208,12 +216,15 @@ saveBtn.addEventListener('click', () => {
   const blob = new Blob([savedHtml.replace(`<${"\/"}body>`, `${saveScript}<${"\/"}body>`)], {type: 'text/html'})
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
+  let title = document.querySelector('#board-title').innerText.replace(/ +/g,'_').replace(/\W/gm,'')
+  if (!(title.replace(/_/g,'').trim())) title = 'big_mood'
   a.href = url
-  a.download = `big_mood_${dateToFilename(new Date())}.html`
+  a.download = `${title}_${dateToFilename(new Date())}.html`
   a.click()
   URL.revokeObjectURL(url)
   loadImages(savedImages)
 })
+
 // Utility functions
 const toBase64 = file => new Promise((resolve, reject) => {
   const reader = new FileReader()
